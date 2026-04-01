@@ -208,4 +208,4 @@ TELEMETRY_EVENTS_PER_SECOND=500
 
 **Kafka connection refused on startup** — broker takes ~30s to be ready. The producer has built-in retry but if you start it immediately after `docker compose up` you may see a brief refusal.
 
-**numpy DLL error on Python 3.13 (Windows)** — use Python 3.11 or 3.12. The scaling engine and tests don't need numpy; the Kaggle loader and dim builder do.
+**numpy DLL error on Python 3.13 (Windows)** — use Python 3.11 or 3.12. The scaling engine and tests don't need numpy; the Kaggle loader and dim builder do
