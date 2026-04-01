@@ -27,6 +27,8 @@ Task dependency graph:
      │                                           │
      │                                   validate_row_counts
      │                                           │
+     │                                    run_meta_report
+     │                                           │
      │                                        [end]
 
 Idempotency guarantees
@@ -95,6 +97,12 @@ def _build_dim_tables(**kwargs):
     """
     from src.transformation.dim_builder import run_dim_build
     run_dim_build()
+
+
+def _run_meta_report(**kwargs):
+    """Generate daily meta snapshot and persist to fact_meta_reports."""
+    from src.analytics.meta_report import run_meta_report
+    run_meta_report()
 
 
 def _validate_row_counts(**kwargs):
@@ -214,8 +222,16 @@ with DAG(
         doc_md="Assert dim_weapons and dim_bosses are non-empty. Fail DAG if not.",
     )
 
+    # ── Meta report ───────────────────────────────────────────────────────────
+
+    meta_report = PythonOperator(
+        task_id="run_meta_report",
+        python_callable=_run_meta_report,
+        doc_md="Generate daily meta snapshot (top builds, boss lethality, archetype tier) and persist to fact_meta_reports.",
+    )
+
     # ── Task dependencies ─────────────────────────────────────────────────────
 
     start >> [extract_weapons, extract_bosses, load_kaggle] >> api_and_kaggle_done
     api_and_kaggle_done >> [refresh_stg_weapons, refresh_stg_bosses] >> staging_done
-    staging_done >> build_dims >> dims_loaded >> validate >> end
+    staging_done >> build_dims >> dims_loaded >> validate >> meta_report >> end
