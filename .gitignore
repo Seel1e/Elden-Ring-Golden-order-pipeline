@@ -39,10 +39,9 @@ coverage.xml
 *.sublime-project
 *.sublime-workspace
 
-# Claude Code
-.claude/
 
-# OS
+# OS / editor tooling
+.claude/
 .DS_Store
 Thumbs.db
 desktop.ini
