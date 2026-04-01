@@ -1,0 +1,207 @@
+# Golden Order Data Pipeline — Elden Ring Combat & Build Analytics
+# Services: PostgreSQL (warehouse) | Kafka | Zookeeper | Spark | Airflow
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.1
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-meta/airflow_db
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+    PYTHONPATH: /opt/airflow
+    # Install required packages at container startup
+    _PIP_ADDITIONAL_REQUIREMENTS: >-
+      loguru==0.7.2
+      pandas==2.0.3
+      numpy==1.24.4
+      pyarrow==14.0.2
+      pydantic==2.6.4
+      python-dotenv==1.0.1
+    # Warehouse connection (overrides .env inside containers)
+    WAREHOUSE_HOST: postgres-warehouse
+    WAREHOUSE_PORT: "5432"
+    WAREHOUSE_USER: eruser
+    WAREHOUSE_PASSWORD: erpass
+    WAREHOUSE_DB: elden_ring_dw
+    # Kafka (batch DAG doesn't use it, but src.config imports it)
+    KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    # Data paths inside the container
+    DATA_LAKE_ROOT: /opt/airflow/data/raw
+    STAGING_ROOT: /opt/airflow/data/staged
+    # Airflow connection for PostgresOperator tasks
+    AIRFLOW_CONN_ELDEN_RING_WAREHOUSE: postgresql://eruser:erpass@postgres-warehouse:5432/elden_ring_dw
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./src:/opt/airflow/src
+    - ./sql:/opt/airflow/sql
+    - ./data:/opt/airflow/data
+    - ./logs:/opt/airflow/logs
+    - ./eldenringScrap:/opt/airflow/eldenringScrap
+  depends_on:
+    postgres-meta:
+      condition: service_healthy
+
+services:
+  # ─────────────────────────────────────────────
+  # DATA WAREHOUSE  (PostgreSQL simulating BigQuery)
+  # ─────────────────────────────────────────────
+  postgres-warehouse:
+    image: postgres:15
+    container_name: er_warehouse
+    environment:
+      POSTGRES_USER: ${WAREHOUSE_USER:-eruser}
+      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:-erpass}
+      POSTGRES_DB: ${WAREHOUSE_DB:-elden_ring_dw}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_warehouse_data:/var/lib/postgresql/data
+      - ./sql/ddl:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eruser -d elden_ring_dw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Airflow metadata store (separate DB)
+  postgres-meta:
+    image: postgres:15
+    container_name: er_airflow_meta
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow_db
+    volumes:
+      - pg_meta_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────────
+  # KAFKA CLUSTER
+  # ─────────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: er_zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zk_data:/var/lib/zookeeper/data
+      - zk_log:/var/lib/zookeeper/log
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: er_kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 24
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # Kafka topic initialiser
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: er_kafka_init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists
+          --topic player_encounters --partitions 6 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists
+          --topic player_encounters_dlq --partitions 2 --replication-factor 1 &&
+        echo 'Topics created.'
+      "
+
+  # ─────────────────────────────────────────────
+  # SPARK CLUSTER  (official apache/spark-py image)
+  # ─────────────────────────────────────────────
+  spark-master:
+    image: apache/spark-py:latest
+    container_name: er_spark_master
+    command: >
+      /opt/spark/bin/spark-class
+      org.apache.spark.deploy.master.Master
+      --host spark-master --port 7077 --webui-port 8080
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ./src:/opt/spark-apps/src
+
+  spark-worker:
+    image: apache/spark-py:latest
+    container_name: er_spark_worker
+    depends_on:
+      - spark-master
+    command: >
+      /opt/spark/bin/spark-class
+      org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077
+    environment:
+      SPARK_WORKER_MEMORY: 2g
+      SPARK_WORKER_CORES: 2
+    volumes:
+      - ./src:/opt/spark-apps/src
+
+  # ─────────────────────────────────────────────
+  # AIRFLOW
+  # ─────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: er_airflow_init
+    entrypoint: >
+      bash -c "
+        pip install --quiet loguru==0.7.2 tenacity==8.2.3 requests==2.31.0
+          pandas==2.2.1 numpy==1.26.4 pyarrow==15.0.2 psycopg2-binary==2.9.9
+          sqlalchemy==2.0.29 pydantic==2.6.4 python-dotenv==1.0.1 &&
+        airflow db init &&
+        airflow users create --username admin --password admin
+          --firstname Golden --lastname Order --role Admin --email admin@eldenring.local
+      "
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: er_airflow_web
+    ports:
+      - "8081:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: er_airflow_scheduler
+    command: scheduler
+
+volumes:
+  pg_warehouse_data:
+  pg_meta_data:
+  zk_data:
+  zk_log:
+  kafka_data:

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="780" viewBox="0 0 1100 780">
+<rect width="1100" height="780" fill="#1a1a2e"/>
+<text x="550" y="38" text-anchor="middle" font-size="22" fill="#c8a96e" font-weight="bold" font-family="monospace">THE GOLDEN ORDER DATA PIPELINE</text>
+<text x="550" y="62" text-anchor="middle" font-size="13" fill="#888" font-weight="normal" font-family="monospace">Elden Ring Combat &amp; Build Analytics — Architecture</text>
+<text x="550" y="95" text-anchor="middle" font-size="11" fill="#666" font-weight="normal" font-family="monospace">DATA SOURCES</text>
+<rect x="30" y="105" width="280" height="60" rx="8" ry="8" fill="#16213e" stroke="#666" stroke-width="1.5" />
+<text x="170" y="134" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Elden Ring Fan API</text>
+<text x="170" y="152" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">REST / JSON / paginated</text>
+<rect x="400" y="105" width="280" height="60" rx="8" ry="8" fill="#16213e" stroke="#666" stroke-width="1.5" />
+<text x="540" y="134" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Kaggle Dataset</text>
+<text x="540" y="152" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">CSV / eldenringScrap/</text>
+<rect x="775" y="105" width="280" height="60" rx="8" ry="8" fill="#16213e" stroke="#666" stroke-width="1.5" />
+<text x="915" y="134" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Telemetry Generator</text>
+<text x="915" y="152" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Synthetic / 500 events/s</text>
+<text x="550" y="202" text-anchor="middle" font-size="11" fill="#666" font-weight="normal" font-family="monospace">INGESTION  (Phase 1)</text>
+<rect x="30" y="212" width="280" height="60" rx="8" ry="8" fill="#0f3460" stroke="#666" stroke-width="1.5" />
+<text x="170" y="241" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">api_extractor.py</text>
+<text x="170" y="259" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">retry / pagination / idempotent</text>
+<rect x="400" y="212" width="280" height="60" rx="8" ry="8" fill="#0f3460" stroke="#666" stroke-width="1.5" />
+<text x="540" y="241" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">kaggle_loader.py</text>
+<text x="540" y="259" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">CSV → Parquet / data/staged/</text>
+<rect x="775" y="212" width="280" height="60" rx="8" ry="8" fill="#922b21" stroke="#666" stroke-width="1.5" />
+<text x="915" y="241" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">kafka_producer.py</text>
+<text x="915" y="259" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">confluent-kafka / LZ4 / async</text>
+<line x1="170" y1="165" x2="170.0" y2="204.0" stroke="#888" stroke-width="1.5"/><polygon points="170,212 166.0,204.0 174.0,204.0" fill="#888"/>
+<line x1="540" y1="165" x2="540.0" y2="204.0" stroke="#888" stroke-width="1.5"/><polygon points="540,212 536.0,204.0 544.0,204.0" fill="#888"/>
+<line x1="915" y1="165" x2="915.0" y2="204.0" stroke="#888" stroke-width="1.5"/><polygon points="915,212 911.0,204.0 919.0,204.0" fill="#888"/>
+<text x="550" y="310" text-anchor="middle" font-size="11" fill="#666" font-weight="normal" font-family="monospace">STORAGE  (Data Lake + Message Broker)</text>
+<rect x="30" y="320" width="280" height="60" rx="8" ry="8" fill="#1a472a" stroke="#666" stroke-width="1.5" />
+<text x="170" y="349" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Data Lake</text>
+<text x="170" y="367" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">data/raw/{endpoint}/{date}/*.json</text>
+<rect x="400" y="320" width="280" height="60" rx="8" ry="8" fill="#1a472a" stroke="#666" stroke-width="1.5" />
+<text x="540" y="349" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Staging Area</text>
+<text x="540" y="367" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">data/staged/*.parquet (Snappy)</text>
+<rect x="775" y="320" width="280" height="60" rx="8" ry="8" fill="#922b21" stroke="#c8a96e" stroke-width="1.5" />
+<text x="915" y="349" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Kafka Topic</text>
+<text x="915" y="367" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">player_encounters (6 partitions)</text>
+<line x1="170" y1="272" x2="170.0" y2="312.0" stroke="#888" stroke-width="1.5"/><polygon points="170,320 166.0,312.0 174.0,312.0" fill="#888"/>
+<line x1="540" y1="272" x2="540.0" y2="312.0" stroke="#888" stroke-width="1.5"/><polygon points="540,320 536.0,312.0 544.0,312.0" fill="#888"/>
+<line x1="915" y1="272" x2="915.0" y2="312.0" stroke="#888" stroke-width="1.5"/><polygon points="915,320 911.0,312.0 919.0,312.0" fill="#888"/>
+<text x="550" y="418" text-anchor="middle" font-size="11" fill="#666" font-weight="normal" font-family="monospace">TRANSFORMATION  (Phase 2 + 3)</text>
+<rect x="30" y="428" width="280" height="60" rx="8" ry="8" fill="#4a235a" stroke="#666" stroke-width="1.5" />
+<text x="170" y="457" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">json_flattener.py</text>
+<text x="170" y="475" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Parse nested dicts → typed cols</text>
+<rect x="390" y="423" width="300" height="70" rx="8" ry="8" fill="#6c1f1f" stroke="#c8a96e" stroke-width="1.5" />
+<text x="540" y="457" text-anchor="middle" font-size="13" fill="#f5c518" font-weight="bold" font-family="monospace">★  scaling_engine.py  ★</text>
+<text x="540" y="475" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Soft-cap AR UDF (piecewise lerp)</text>
+<rect x="775" y="428" width="280" height="60" rx="8" ry="8" fill="#a04000" stroke="#666" stroke-width="1.5" />
+<text x="915" y="457" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">spark_consumer.py</text>
+<text x="915" y="475" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Structured Streaming / foreachBatch</text>
+<line x1="170" y1="380" x2="170.0" y2="420.0" stroke="#888" stroke-width="1.5"/><polygon points="170,428 166.0,420.0 174.0,420.0" fill="#888"/>
+<line x1="540" y1="380" x2="540.0" y2="420.0" stroke="#888" stroke-width="1.5"/><polygon points="540,428 536.0,420.0 544.0,420.0" fill="#888"/>
+<line x1="915" y1="380" x2="915.0" y2="420.0" stroke="#888" stroke-width="1.5"/><polygon points="915,428 911.0,420.0 919.0,420.0" fill="#888"/>
+<line x1="310" y1="458" x2="382.0" y2="458.0" stroke="#888" stroke-width="1.5"/><polygon points="390,458 382.0,462.0 382.0,454.0" fill="#888"/>
+<line x1="690" y1="458" x2="767.0" y2="458.0" stroke="#c8a96e" stroke-width="1.5"/><polygon points="775,458 767.0,462.0 767.0,454.0" fill="#c8a96e"/><text x="736.5" y="454.0" text-anchor="middle" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">UDF</text>
+<rect x="15" y="100" width="1070" height="450" rx="12" ry="12" fill="none" stroke="#c8a96e" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="880" y="558" text-anchor="middle" font-size="11" fill="#c8a96e" font-weight="normal" font-family="monospace">Airflow DAG  @daily  |  golden_order_pipeline</text>
+<text x="550" y="580" text-anchor="middle" font-size="11" fill="#5d8aa8" font-weight="normal" font-family="monospace">DATA WAREHOUSE  (golden_order schema  —  PostgreSQL / BigQuery)</text>
+<rect x="15" y="588" width="1070" height="80" rx="8" ry="8" fill="#0d1b2a" stroke="#1b4f72" stroke-width="1" />
+<rect x="30" y="595" width="280" height="65" rx="8" ry="8" fill="#1b4f72" stroke="#666" stroke-width="1.5" />
+<text x="170" y="626" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">dim_weapons</text>
+<text x="170" y="644" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">60K rows | AR pre-computed | +25 max</text>
+<rect x="390" y="595" width="300" height="65" rx="8" ry="8" fill="#1b4f72" stroke="#666" stroke-width="1.5" />
+<text x="540" y="626" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">dim_bosses</text>
+<text x="540" y="644" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">154 rows | HP + drops + DLC flag</text>
+<rect x="775" y="595" width="280" height="65" rx="8" ry="8" fill="#1b4f72" stroke="#c8a96e" stroke-width="1.5" />
+<text x="915" y="626" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">fact_encounters</text>
+<text x="915" y="644" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Streaming sink | event_id UNIQUE</text>
+<line x1="540" y1="488" x2="540.0" y2="587.0" stroke="#888" stroke-width="1.5"/><polygon points="540,595 536.0,587.0 544.0,587.0" fill="#888"/>
+<line x1="170" y1="488" x2="170.0" y2="587.0" stroke="#888" stroke-width="1.5"/><polygon points="170,595 166.0,587.0 174.0,587.0" fill="#888"/>
+<line x1="915" y1="488" x2="915.0" y2="587.0" stroke="#888" stroke-width="1.5"/><polygon points="915,595 911.0,587.0 919.0,587.0" fill="#888"/>
+<text x="550" y="698" text-anchor="middle" font-size="11" fill="#666" font-weight="normal" font-family="monospace">ANALYTICS  (Phase 4)</text>
+<rect x="100" y="706" width="350" height="60" rx="8" ry="8" fill="#145a32" stroke="#666" stroke-width="1.5" />
+<text x="275" y="735" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Analytics Views (SQL)</text>
+<text x="275" y="753" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">v_boss_lethality / v_weapon_win_rates</text>
+<rect x="620" y="706" width="350" height="60" rx="8" ry="8" fill="#145a32" stroke="#c8a96e" stroke-width="1.5" />
+<text x="795" y="735" text-anchor="middle" font-size="12" fill="white" font-weight="bold" font-family="monospace">Metabase Dashboard</text>
+<text x="795" y="753" text-anchor="middle" font-size="10" fill="#bbb" font-weight="normal" font-family="monospace">Most Lethal Bosses | Best Builds</text>
+<line x1="275" y1="660" x2="275.0" y2="698.0" stroke="#888" stroke-width="1.5"/><polygon points="275,706 271.0,698.0 279.0,698.0" fill="#888"/>
+<line x1="800" y1="660" x2="800.0" y2="698.0" stroke="#888" stroke-width="1.5"/><polygon points="800,706 796.0,698.0 804.0,698.0" fill="#888"/>
+<line x1="450" y1="736" x2="612.0" y2="736.0" stroke="#888" stroke-width="1.5"/><polygon points="620,736 612.0,740.0 612.0,732.0" fill="#888"/>
+<rect x="15" y="718" width="14" height="14" rx="2" ry="2" fill="#16213e" stroke="#666" stroke-width="1" />
+<text x="35" y="729" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Data Source</text>
+<rect x="145" y="718" width="14" height="14" rx="2" ry="2" fill="#0f3460" stroke="#666" stroke-width="1" />
+<text x="165" y="729" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Ingestion (Phase 1)</text>
+<rect x="275" y="718" width="14" height="14" rx="2" ry="2" fill="#1a472a" stroke="#666" stroke-width="1" />
+<text x="295" y="729" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Data Lake / Staging</text>
+<rect x="405" y="718" width="14" height="14" rx="2" ry="2" fill="#6c1f1f" stroke="#666" stroke-width="1" />
+<text x="425" y="729" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">★ Scaling Engine</text>
+<rect x="15" y="740" width="14" height="14" rx="2" ry="2" fill="#a04000" stroke="#666" stroke-width="1" />
+<text x="35" y="751" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Stream Processing</text>
+<rect x="145" y="740" width="14" height="14" rx="2" ry="2" fill="#1b4f72" stroke="#666" stroke-width="1" />
+<text x="165" y="751" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Data Warehouse</text>
+<rect x="275" y="740" width="14" height="14" rx="2" ry="2" fill="#145a32" stroke="#666" stroke-width="1" />
+<text x="295" y="751" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Analytics / BI</text>
+<rect x="405" y="740" width="14" height="14" rx="2" ry="2" fill="#922b21" stroke="#666" stroke-width="1" />
+<text x="425" y="751" text-anchor="start" font-size="10" fill="#aaa" font-weight="normal" font-family="monospace">Kafka Broker</text>
+</svg>

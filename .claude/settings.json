@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker pull:*)",
+      "Bash(.venv/Scripts/python -m src.transformation.dim_builder)",
+      "Bash(.venv/Scripts/python -c \":*)",
+      "Bash(where java:*)",
+      "Read(//c/Program Files/Microsoft/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(docker --version)",
+      "Bash(docker compose:*)",
+      "Bash(docker exec:*)"
+    ]
+  }
+}
