@@ -9,7 +9,13 @@
 #   make consume      Start the Spark streaming consumer
 #   make infra-up     Start all Docker services (Kafka, Postgres, Airflow, Spark)
 #   make infra-down   Stop all Docker services
-#   make demo         Run a quick demo (no Docker required)
+#   make demo         Run a quick demo (with or without Docker accordingly)
+#   make clean        Clean up cache and data directories
+#   make calculator   Run the calculator tool
+#   make advisor      Run the advisor tool
+#   make streamlit    Run the Streamlit app
+#   make api          Run the API server
+#   make meta-report  Generate a meta report
 # ════════════════════════════════════════════════════════════════════════════
 
 PYTHON     := python
