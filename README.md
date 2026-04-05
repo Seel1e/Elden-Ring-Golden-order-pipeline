@@ -1,12 +1,12 @@
 # Golden Order — Elden Ring Combat Analytics
 
-An end-to-end data pipeline built around one question: **which weapon builds actually win fights, and which bosses kill the most players?**
+An end-to-end data pipeline built around one question: **which weapon builds actually win fights, and which bosses kill the most players? and thr statistics behind it.**
 
-Answering that correctly means solving the non-linear soft-cap scaling system that determines weapon damage in Elden Ring. That math is the core of this project. Everything else — Kafka, Spark, Airflow, the REST API, the Streamlit dashboard — exists to run it at scale and surface the results.
+Answering that correctly means solving the non-linear soft-cap scaling system that determines weapon damage in Elden Ring. That math is the core of this project. Everything else:- Kafka, Spark, Airflow, the REST API, the Streamlit dashboard  exists to run it at scale and surface the results.
 
 ---
 
-## What it does
+**What it does?**
 
 Synthetic player encounter events are generated and published to Kafka at ~500/s. A Spark Structured Streaming consumer picks them up, joins against weapon and boss dimension tables, runs the scaling engine UDF to compute each player's true Attack Rating at their exact stats, then writes the enriched rows to PostgreSQL. Airflow runs the nightly batch to refresh the dimensions from the API and Kaggle dataset. The results are queryable through a FastAPI service and a Streamlit dashboard.
 
@@ -20,7 +20,7 @@ Synthetic player encounter events are generated and published to Kafka at ~500/s
 
 ---
 
-## The Scaling Engine
+** The Scaling Engine **
 
 Weapon damage in Elden Ring is not a flat number. It scales non-linearly with player stats through two soft caps — returns diminish sharply at stat 60, then again at 80.
 
