@@ -1,6 +1,6 @@
 # Golden Order — Elden Ring Combat Analytics
 
-An end-to-end data pipeline built around one question: **which weapon builds actually win fights, and which bosses kill the most players? and thr statistics behind it.**
+An end-to-end data pipeline built around one question: **which weapon builds actually win fights, and which bosses kill the most players? and the statistics behind it.**
 
 Answering that correctly means solving the non-linear soft-cap scaling system that determines weapon damage in Elden Ring. That math is the core of this project. Everything else:- Kafka, Spark, Airflow, the REST API, the Streamlit dashboard  exists to run it at scale and surface the results.
 
